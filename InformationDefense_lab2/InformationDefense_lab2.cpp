@@ -1,3 +1,9 @@
+////
+//// Шифруем мы текст с помощью char'ов, а не unsigned char'ов:
+//// (text[i] + key[j]) % mod
+//// Далее запоминаем это в unsigned char и записываем
+//// В файл пишутся unsigned char'ы
+
 #include<iostream>
 #include<vector>
 #include<string>
@@ -5,7 +11,6 @@
 #include <windows.h>
 #include <vector>
 #include <algorithm>
-#include <locale>
 
 using namespace std;
 
@@ -36,11 +41,15 @@ public:
 			if (j >= key.size())
 				j = 0;
 
-			//unsigned char uchKeySymbol = (unsigned char) key[j];
-			//unsigned char uchWordSymbol = (unsigned char)word[j];
-			//unsigned char uchResult = (uchKeySymbol + uchWordSymbol) % mod;
+			// Если ключ 'дом', то он имеет следующие индексы в unsigned char:
+			// д: -92
+			// о: -82
+			// м: -84
 
-			unsigned char ch = word[i] + key[j];
+			char wordSymbol = word[i];
+			char keySymbol = key[j];
+
+			unsigned char ch = wordSymbol + keySymbol;
 			ch = ch % mod;
 			output += ch;
 			j++;
@@ -77,7 +86,7 @@ public:
 		{
 			for (int j = 0; j < 255; j++)
 			{
-				unsigned char ucSymbol = (unsigned char)tolower(text[i]);
+				unsigned char ucSymbol = (unsigned char)text[i];
 
 				if (chars_nullable[j] == false)
 				{
@@ -113,8 +122,7 @@ public:
 
 				char ch = text[i];
 				unsigned char chAny = (unsigned char)ch;
-				unsigned char ucSymbol = tolower((int)chAny);
-				ucSymbol = (unsigned char)tolower((unsigned)ucSymbol);
+				unsigned char ucSymbol = (int)chAny;
 
 				if (chars_nullable[j] == false)
 				{
@@ -192,20 +200,29 @@ public:
 				_tmp = 0;
 		}
 
-
 		for (int j = 0; j < _LGrammCount; j++)
 		{
 			cout << "L-gramma [" << j << "]: " << endl;
 			//cout << _substrs[j] << endl;
 			pair<unsigned char, int> high_freq_sub = decrypt_by_average_symbol_value(_substrs[j]);
-			int i1 = (int)high_freq_sub.first;
+
+			// ОН ВЕРНО НАХОДИТ high_freq_sub и ВЕРНО НАХОДИТ max_fr_letter
+			// Нужно лишь корректно изменить все это
+			
+			// Текущая разница( то бишь - смещение ):
+			// uchar: 164 - ЭТО РАЗГАДКА, Д - 'пробел' после смещения ее индекс 196 к UCHAR, если из нее вычесть 164 - СМЕЩЕНИЕ,
+			// то мы получим то, что и требуется - 32, что является 'пробелом' в дешифрованном виде
+			// char: -92
+
+			int i1 = (int)high_freq_sub.first; // Во втором томе 'Д' - это пробел, 196 в виде  unsigned char
 			int i2 = (int)max_fr_letter.first;
 			int res = i1 - i2;
 
 			unsigned char difference = (unsigned char)res;
-
+			
 			result.push_back(difference);
 			result2 = +difference;
+
 		}
 		return result;
 	}
@@ -252,38 +269,6 @@ void PrintMenu()
 
 int main()
 {
-	//ofstream writer("base.txt", ios::binary);
-	//vector<unsigned char> text;
-	//string strtext = "HellO, MafaWeR Привет мир, это какое-то сообщение, чтобы понять, правильно ли мы получаем ЛГраммы или что-то идет не по плану.\nВот новая строка, а мы и дальше пытаемся написать большой текст от руки\nЭто самая глупая затея, но что поделать, будем писать, ведь если даже не пытаться это сделать, то в мире может загрустить одна византийская ваза\nХоть эта глупая ваза и думает, что должна все делать сама, никто ей помогать не должен и т.д, и т.п., но я не буду слушать вазу, ну это же глупость какая, взять и слушать вазу, лучше делать так, как считаю нужным и не останавливаться в попытках помочь\nДа, я - идиот, ничего не удается сделать, времени тупо не хватает, но кто сказал, что я не смогу найти решения, может и не своего, мне ведь главное, чтобы моя милая ваза все усвоила и успешно сдала работы, а она все протекает, и протекает и вовсе не в том смысле, в котором ей это дозволено, поэтому не знаю что тут думать";
-	//string lowerstr = "";
-	//std::locale loc("ru_RU");
-	//for (std::string::size_type i = 0; i < strtext.length(); ++i)
-	//{
-	//	unsigned char ch = std::tolower((unsigned)strtext[i], loc);
-	//	lowerstr += ch;
-	//}
-
-
-	 //![0] = Пв рэ к- оеечбпя,ринлмпуеЛаылч- енппн\nтоятк миашпаснитбьйетту\nоаялазе  оольбепа, е лдееытятсльтви ж гстоаинйавао алава мтч ласда м к  ма  лн ди., о  дсшьа, утжгптка я сшьа, уеетт, аст жм  таитя пк мьая и, игнуеяда, ре пнхттнк алч нсгнтреямеиевг ее ао о яияа еси уеодаат о ерее пта вснвосс, тоеэ злоптуен оуда
-	 //![1] = рем,ткотсбн,тыот алоиыочмГм иттитеолуВ в рааы леыеяасьош к  кЭ м уяаянч да,умит деиа  ть ода,о рмезртьд зтсяа\nтэ уяа да, тдж еетсантепотндж т, п  нбула з  оелоьаявтила з ч льа кчанн ноаввь пыапо\n, ио чоедт ет ентоева, отсз, тяемуаиен, от  оом дгвечбм л зв влисш а быанв октирееиоее ммл комйтдве, оо  ач тут
-	 //![2] = ити оаеоощи о ньпвь   ла рми оод   а.онасо,  дь тм па лотсоритсагп т,отпет д сьвьс жнпасэ ет  меотауи нваик зХьтгп зиуе оонв льа,иойогьеоеи. т.няеу утвунэ  ус к,зь утвулшда кк июуыиеснласвотхочД -дтне  ассльвмиу  ае  ока о  о й ши ж нсе,нвьлн,тыомавасуоа пнслро, аспта, окт в  т ыевор  ооон эмнзютт мь
-
-
-	//for (int i = 0; i < strlen(strtext.c_str()); i++)
-	//{
-	//	unsigned char uch = (unsigned char) strtext[i];
-	//	text.push_back(uch);
-	//	writer << text[i];
-	//}
-
-	//char c = 'Р';
-	//char lowerc = (char) tolower((unsigned)c);
-
-	//Efimenko_vigener crypt = Efimenko_vigener();
-	//crypt.frequency_analysis(3, strtext, pair<unsigned char, int>(' ', 1.423));
-
-	//writer.close();
-
 	while (1) {
 		PrintMenu();
 		int x;
@@ -295,6 +280,12 @@ int main()
 			cout << "Enter name of file: ";
 			cin >> filename;
 			ifstream inf(filename, ios::binary);
+
+			if (inf.is_open() == false) {
+				cout << "file doesnt exists" << endl;
+				continue;
+			}
+
 			while (!inf.eof())
 			{
 				getline(inf, count);
@@ -346,13 +337,16 @@ int main()
 
 			pair<unsigned char, double> high_freq_ideal = chiefr2.decrypt_by_average_symbol_value(word_reference); //самый частовстречаемый символ в эталонном тексте
 
+
+			// зашифрованное О - это t
 			vector<unsigned char> keyChange = chiefr2.frequency_analysis(3, word2, high_freq_ideal); //find key_name
 			ofstream fout;
 			fout.open("key.txt", ios::binary);
 			for (auto pos : keyChange)
 			{
-				fout << pos;
-				cout << pos;
+				char charS = pos;
+				fout << charS;
+				cout << charS;
 			}
 			fout.close();
 			break;
