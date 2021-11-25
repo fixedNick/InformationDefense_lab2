@@ -18,21 +18,6 @@ private:
 	int mod;
 	string word;
 public:
-	static string get_lower_case_text(string _text)
-	{
-		string text;
-		std::locale loc("ru_RU");
-		for (std::string::size_type i = 0; i < _text.length(); ++i)
-		{
-			unsigned char ch = std::tolower((unsigned)_text[i], loc);
-			text += ch;
-		}
-
-		return text;
-	}
-
-	// Если мы приведем нашу строку в lowercase, то необходимо запомнить изначальную строку,
-	// потому что 'П' и 'п' при дешифровке будут смещены неверно
 	Efimenko_vigener(string key_input, int size_N = 255)
 	{
 		key = key_input;
@@ -81,9 +66,8 @@ public:
 	}
 
 	// ++
-	vector<pair<unsigned char, int>> get_sorted_symbols_count(string _text)
+	vector<pair<unsigned char, int>> get_sorted_symbols_count(string text)
 	{
-		string text = get_lower_case_text(_text);
 		bool chars_nullable[255];
 		vector<pair<unsigned char, int>> chars_counter;
 		for (auto& nullable : chars_nullable)
@@ -115,9 +99,8 @@ public:
 	}
 
 	// ++
-	vector<pair<unsigned char, double>> get_sorted_symbols_countd(string _text)
+	vector<pair<unsigned char, double>> get_sorted_symbols_countd(string text)
 	{
-		string text = get_lower_case_text(_text);
 		bool chars_nullable[255];
 		vector<pair<unsigned char, double>> chars_counter;
 		for (auto& nullable : chars_nullable)
@@ -347,7 +330,7 @@ int main()
 			}
 			inf.close();
 			Efimenko_vigener chiefr2;
-			chiefr2.findIndexs(Efimenko_vigener::get_lower_case_text(word2));
+			chiefr2.findIndexs(word2);
 			baseEncodedText = word2;
 
 			cout << "Enter name reference text: "; //Input ideal text and count frequency 
@@ -361,9 +344,9 @@ int main()
 			}
 			fin.close(); //begin frequency analyse
 
-			pair<unsigned char, double> high_freq_ideal = chiefr2.decrypt_by_average_symbol_value(Efimenko_vigener::get_lower_case_text(word_reference)); //самый частовстречаемый символ в эталонном тексте
+			pair<unsigned char, double> high_freq_ideal = chiefr2.decrypt_by_average_symbol_value(word_reference); //самый частовстречаемый символ в эталонном тексте
 
-			vector<unsigned char> keyChange = chiefr2.frequency_analysis(3, Efimenko_vigener::get_lower_case_text(word2), high_freq_ideal); //find key_name
+			vector<unsigned char> keyChange = chiefr2.frequency_analysis(3, word2, high_freq_ideal); //find key_name
 			ofstream fout;
 			fout.open("key.txt", ios::binary);
 			for (auto pos : keyChange)
