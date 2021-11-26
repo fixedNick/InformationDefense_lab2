@@ -1,8 +1,4 @@
-////
-//// Шифруем мы текст с помощью char'ов, а не unsigned char'ов:
-//// (text[i] + key[j]) % mod
-//// Далее запоминаем это в unsigned char и записываем
-//// В файл пишутся unsigned char'ы
+/// 
 
 #include<iostream>
 #include<vector>
@@ -13,8 +9,6 @@
 #include <algorithm>
 
 using namespace std;
-
-string baseEncodedText;
 
 class Efimenko_vigener
 {
@@ -31,6 +25,10 @@ public:
 	Efimenko_vigener()
 	{
 	}
+
+	/// Мы вычиляем в ecrypt/decrypt как сумму char'ов ключа и шифруемого текста
+	/// Записываем все в unsigned char, без явного преобразования(без (unsigned char) var_name)
+	/// После добавляем символ в строку output, предположительно проиcходит неявное преобразование в char.
 	string encrypt(string word)
 	{
 		string output = "";
@@ -40,11 +38,6 @@ public:
 		{
 			if (j >= key.size())
 				j = 0;
-
-			// Если ключ 'дом', то он имеет следующие индексы в unsigned char:
-			// д: -92
-			// о: -82
-			// м: -84
 
 			char wordSymbol = word[i];
 			char keySymbol = key[j];
@@ -56,7 +49,6 @@ public:
 		}
 		return output;
 	}
-
 	string decrypt(string data)
 	{
 		string output;
@@ -74,97 +66,72 @@ public:
 		return output;
 	}
 
-	// ++
-	vector<pair<unsigned char, int>> get_sorted_symbols_count(string text)
+	/// Метод для вычисления сколько раз каждый уникальный символ встречается в тексте
+	/// Возвращает вектор пар: <символ, сколько раз встречается>
+	/// Пример <'c', 22>
+	vector<pair<unsigned char, int>> get_symbols_count(string text)
 	{
+		// NULL'able массив, чтобы проверять, до какого элемента мы уже записали уникальные символы
+		// Если при проверке допустим chars_nullable[27] в нем будет false - значит 28,29..254 элементы точно false
+		// Далее этот пример [27] будет обозначен как [ИНДЕКС], предполагая, что до него 0..26 все TRUE
+		// Соответственно, если мы искали какой-то символ, но на каком-то моменте chars_nullable[ИНДЕКС] имеет false
+		// Значит мы еще не записали символ, добавим его в вектор chars_counter (он будет на позиции [ИНДЕКС]) , где хранятся наши пары
+		// А в chars_nullable[ИНДЕКС] запишем TRUE, это будет означать, что [ИНДЕКС] занят каким-то символом, этот символ
+		// можно будет достать из chars_counter по тому же [ИНДЕКС]
 		bool chars_nullable[255];
 		vector<pair<unsigned char, int>> chars_counter;
-		for (auto& nullable : chars_nullable)
+		for (auto& nullable : chars_nullable) // Инициализируем массив пустыми элементами (false)
 			nullable = false;
 
 		for (int i = 0; i < text.size(); i++)
 		{
 			for (int j = 0; j < 255; j++)
 			{
-				unsigned char ucSymbol = (unsigned char)text[i];
+				unsigned char ucSymbol = (unsigned char)text[i]; // Необходимое явное преобразование, для корректного сравнения
 
-				if (chars_nullable[j] == false)
+				if (chars_nullable[j] == false) // Дошли до индекса [j] где уже нет элемента, дальше проверять нет смысла, там везде false
 				{
+					// Добавляем новый найденный символ в вектор пар, а в chars_nullable[j] записываем, что индекс занят
 					pair<unsigned char, int> c_counter_pair = pair<unsigned char, int>(ucSymbol, 1);
 					chars_counter.push_back(c_counter_pair);
 					chars_nullable[j] = true;
 					break;
 				}
-				else if (ucSymbol == chars_counter.at(j).first)
+				else if (ucSymbol == chars_counter.at(j).first) // Символ найден в нашем векторе
 				{
+					// Увеличиваем количество данного символа в строке
 					chars_counter.at(j).second++;
 					break;
 				}
-				//cout << chars_counter.at(j).first << " " << chars_counter.at(j).second<<endl;
 				continue;
 			}
 		}
 		return chars_counter;
 	}
 
-	// ++
-	vector<pair<unsigned char, double>> get_sorted_symbols_countd(string text)
-	{
-		bool chars_nullable[255];
-		vector<pair<unsigned char, double>> chars_counter;
-		for (auto& nullable : chars_nullable)
-			nullable = false;
-
-		for (int i = 0; i < text.size(); i++)
-		{
-			for (int j = 0; j < 255; j++)
-			{
-
-				char ch = text[i];
-				unsigned char chAny = (unsigned char)ch;
-				unsigned char ucSymbol = (int)chAny;
-
-				if (chars_nullable[j] == false)
-				{
-					pair<unsigned char, double> c_counter_pair = pair<unsigned char, double>(ucSymbol, 1);
-					chars_counter.push_back(c_counter_pair);
-					chars_nullable[j] = true;
-					break;
-				}
-				else if (ucSymbol == chars_counter.at(j).first)
-				{
-					chars_counter.at(j).second++;
-					break;
-				}
-				//cout << chars_counter.at(j).first << " " << chars_counter.at(j).second<<endl;
-				continue;
-			}
-		}
-		return chars_counter;
-	}
-	// ++
+	// Индексы определяются, раньше они показывали отрицательные значения из-за переполнения памяти
+	// Томы Tолстого влезают в только в long long, потому что значение k - длина строки - 36 миллиардов
 	double findEC(vector<pair<unsigned char, int>>& sub)
 	{
 		double index = 0;
-		int N = 0;
+		long long N = 0;
 		for (auto pair : sub)
 			N += pair.second;
 
 		for (auto pair : sub)
 		{
 			double add = 0;
-			int num = pair.second * (pair.second - 1);
-			int k = N * (N - 1);
+			long long num = pair.second * (pair.second - 1);
+			long long k = N * (N - 1);
 			add = (double)num / (double)k;
 			index += add;
 		}
 		return index;
 	}
-	// ++
 	pair<unsigned char, double> decrypt_by_average_symbol_value(string ref_text)
 	{
 		// Тут частоты каждого символа эталонного текст в виде вектор пары (буква, частота)
-		vector<pair<unsigned char, double>> standart_text_symbols_data = get_sorted_symbols_countd(ref_text);
+		vector<pair<unsigned char, int>> standart_text_symbols_data = get_symbols_count(ref_text);
 		vector<pair<unsigned char, double>> frequency_vector;
 		pair<unsigned char, double>letter_frequency;
 		for (auto& pair : standart_text_symbols_data)
@@ -180,18 +147,17 @@ public:
 			if (pair.second > buf.second)
 				buf = pair;
 		}
-		cout << "Letter: " << buf.first << "  frequency:" << buf.second << endl;
+		cout << "Letter: " << (char)buf.first << "  frequency:" << buf.second << endl;
 		return buf;
 	}
-	// ++
-	vector<unsigned char> frequency_analysis(int key_length, string textEnc, pair<unsigned char, double> max_fr_letter)
+	vector<unsigned char> frequency_analysis(int key_length, string textEnc, unsigned char max_fr_letter)
 	{
 		/// Получаем все L-граммы в зависимости от длины ключа
 		vector<unsigned char> result;
-		string result2 = "";
 		int _LGrammCount = key_length;
 		vector<string>_substrs(_LGrammCount);
 		int _tmp = 0;
+		// Дробим текст на ЛГраммы
 		for (int i = 0; i < textEnc.size(); i++)
 		{
 			_substrs[_tmp].push_back(textEnc[i]);
@@ -200,45 +166,33 @@ public:
 				_tmp = 0;
 		}
 
+		// Пробегаемся по каждой ЛГрамме - находим в ней самый встречающийся символ, вычитаем из него самый встречающийся
+		// символ эталона - это и будет одним из символов нашего ключа
 		for (int j = 0; j < _LGrammCount; j++)
 		{
 			cout << "L-gramma [" << j << "]: " << endl;
-			//cout << _substrs[j] << endl;
 			pair<unsigned char, int> high_freq_sub = decrypt_by_average_symbol_value(_substrs[j]);
 
-			// ОН ВЕРНО НАХОДИТ high_freq_sub и ВЕРНО НАХОДИТ max_fr_letter
-			// Нужно лишь корректно изменить все это
-			
-			// Текущая разница( то бишь - смещение ):
-			// uchar: 164 - ЭТО РАЗГАДКА, Д - 'пробел' после смещения ее индекс 196 к UCHAR, если из нее вычесть 164 - СМЕЩЕНИЕ,
-			// то мы получим то, что и требуется - 32, что является 'пробелом' в дешифрованном виде
-			// char: -92
+			int i1 = (int)high_freq_sub.first; // Самый встречающийся символ в ЛГрамме
+			int i2 = (int)max_fr_letter; // Самый встречающийся символ в эталоне
+			int res = i1 - i2; // Символ нашего ключа
 
-			int i1 = (int)high_freq_sub.first; // Во втором томе 'Д' - это пробел, 196 в виде  unsigned char
-			int i2 = (int)max_fr_letter.first;
-			int res = i1 - i2;
+			unsigned char difference = (unsigned char)res; // Символ нашего ключа
 
-			unsigned char difference = (unsigned char)res;
-			
-			result.push_back(difference);
-			result2 = +difference;
-
+			result.push_back(difference); // Записываем ключ
 		}
 		return result;
 	}
 
-	// --++--
-	void findIndexs(string word2)
+	// Метод делит наш шифротекст на ЛГраммы и для каждой находит индекс совпадения
+	// Возвращает все индексы совпадения
+	vector<double> findIndexs(string word2)
 	{
 		vector <double> indexes;
-		vector<string> substring;
-		vector<pair<unsigned char, int>> collect_index;
-		//find length
-		//find substrings
 		int tmp_counter = 0;
-		int key_length = 2;
 		string substr_result = "";
-		do
+
+		for (int key_length = 2; key_length < 20; key_length++)
 		{
 			for (int i = 0; i < word2.size(); i++)
 			{
@@ -246,17 +200,13 @@ public:
 					substr_result += word2[i];
 				}
 			}
-			substring.push_back(substr_result);
-			//cout << substr_result;
-			collect_index = get_sorted_symbols_count(substr_result);
-			indexes.push_back(findEC(collect_index));
-			key_length++;
+			auto sybstr_symbols = get_symbols_count(substr_result);
+			indexes.push_back(findEC(sybstr_symbols));
 			substr_result = "";
 			tmp_counter = 0;
-		} while (key_length < 20);
+		}
+		return indexes;
 	}
-	// find indexes
-
 };
 
 void PrintMenu()
@@ -274,87 +224,104 @@ int main()
 		int x;
 		cin >> x;
 		switch (x) {
-		case 1:
-		{
-			string filename, string, word, key, count;
-			cout << "Enter name of file: ";
-			cin >> filename;
-			ifstream inf(filename, ios::binary);
-
-			if (inf.is_open() == false) {
-				cout << "file doesnt exists" << endl;
-				continue;
-			}
-
-			while (!inf.eof())
+			case 1:
 			{
-				getline(inf, count);
-				word += count;
+				string filename, string, word, key, count;
+				cout << "Enter name of file: ";
+				cin >> filename;
+				ifstream inf(filename, ios::binary);
+
+				if (inf.is_open() == false) {
+					cout << "file doesnt exists" << endl;
+					continue;
+				}
+
+				while (!inf.eof())
+				{
+					getline(inf, count);
+					word += count;
+				}
+				inf.close();
+
+				cout << "Enter key: ";
+				cin >> key;
+				Efimenko_vigener chiefr(key, 255);
+
+				ofstream fout;
+				std::string enc_text = chiefr.encrypt(word);
+				fout.open("encrypted.txt", ios::binary);
+				fout << enc_text;
+				fout.close();
+				fout.open("decrypted.txt", ios::binary);
+				fout << chiefr.decrypt(chiefr.encrypt(word));
+				fout.close();
+				break;
 			}
-			inf.close();
-
-			cout << "Enter key: ";
-			cin >> key;
-			Efimenko_vigener chiefr(key, 255);
-
-			ofstream fout;
-			std::string enc_text = chiefr.encrypt(word);
-			fout.open("encrypted.txt", ios::binary);
-			fout << enc_text;
-			fout.close();
-			fout.open("decrypted.txt", ios::binary);
-			fout << chiefr.decrypt(chiefr.encrypt(word));
-			fout.close();
-			break;
-		}
-		case 2:
-		{
-			string filename, string, word_reference, word2, key, count;
-			cout << "Enter name of file: ";
-			cin >> filename;
-			ifstream inf(filename, ios::binary);
-			word2 = "";
-			while (!inf.eof())
+			case 2:
 			{
-				getline(inf, count);
-				word2 += count;
+				string filename, string, word_reference, word2, key, count;
+				cout << "Enter name of file: ";
+				cin >> filename;
+				ifstream inf(filename, ios::binary);
+				word2 = "";
+				while (!inf.eof())
+				{
+					getline(inf, count);
+					word2 += count;
+				}
+				inf.close();
+				
+				cout << "Enter name reference text: "; //Input ideal text and count frequency 
+				cin >> filename;
+				ifstream fin(filename, ios::binary);
+				word_reference = "";
+				while (!fin.eof())
+				{
+					getline(fin, count);
+					word_reference += count;
+				}
+				fin.close();
+				
+				Efimenko_vigener chiefr2;
+				vector<double> indexes = chiefr2.findIndexs(word2);
+				// Тут мы уже получили все индексы совпадений для всех длин ключа, даем пользователю возможность выбрать
+				// понравившуюся ему длину ключа и попробовать расшифровать по ней текст, с возможностью перевыбора
+
+				while (true) {
+					cout << "Coincidence indexes: " << endl;
+					for (int i = 0; i < indexes.size(); i++)
+						cout << "For key length [" << i + 2 << "], index is [" << indexes[i] << "]" << endl;
+
+					int input_key_length = 0;
+					cout << "Enter key length to decrypt text or '0' to exit: ";
+					cin >> input_key_length;
+
+					if (input_key_length == 0) return 0;
+					else if (input_key_length == 1 || input_key_length-2 > indexes.size()) {
+						cout << "We didnt calculate ci for this key length" << endl;
+						continue;
+					}
+					
+					pair<unsigned char, double> high_freq_ideal = chiefr2.decrypt_by_average_symbol_value(word_reference); //самый частовстречаемый символ в эталонном тексте
+
+					vector<unsigned char> key = chiefr2.frequency_analysis(input_key_length, word2, high_freq_ideal.first); //find key_name
+					ofstream fout;
+					fout.open("key.txt", ios::binary);
+
+					cout << "Found key [";
+					for (auto pos : key)
+					{
+						char charS = pos;
+						fout << charS;
+						cout << charS;
+					}
+					cout << "]" << endl;
+					fout.close();
+				}
+
+				break;
 			}
-			inf.close();
-			Efimenko_vigener chiefr2;
-			chiefr2.findIndexs(word2);
-			baseEncodedText = word2;
-
-			cout << "Enter name reference text: "; //Input ideal text and count frequency 
-			cin >> filename;
-			ifstream fin(filename, ios::binary);
-			word_reference = "";
-			while (!fin.eof())
-			{
-				getline(fin, count);
-				word_reference += count;
-			}
-			fin.close(); //begin frequency analyse
-
-			pair<unsigned char, double> high_freq_ideal = chiefr2.decrypt_by_average_symbol_value(word_reference); //самый частовстречаемый символ в эталонном тексте
-
-
-			// зашифрованное О - это t
-			vector<unsigned char> keyChange = chiefr2.frequency_analysis(3, word2, high_freq_ideal); //find key_name
-			ofstream fout;
-			fout.open("key.txt", ios::binary);
-			for (auto pos : keyChange)
-			{
-				char charS = pos;
-				fout << charS;
-				cout << charS;
-			}
-			fout.close();
-			break;
-		}
-		case 3:
-		{
-			return 0;
-		}
+			case 3: return 0;
 		}
 		cout << '\n';
 	}
